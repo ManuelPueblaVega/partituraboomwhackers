@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partitura para Boomwhackers Mejorada</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #score {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .note {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+        .note.low {
+            border-bottom: 3px solid #000;
+        }
+        .note::after {
+            content: attr(data-note);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Partitura para Boomwhackers Mejorada</h1>
+    <div id="score"></div>
+    <div id="controls">
+        <button onclick="addNote('C', '#FF0000')">Do (Rojo)</button>
+        <button onclick="addNote('C#', '#FF4500')">Do# (Naranja rojizo)</button>
+        <button onclick="addNote('D', '#FFA500')">Re (Naranja)</button>
+        <button onclick="addNote('D#', '#FFD700')">Re# (Amarillo dorado)</button>
+        <button onclick="addNote('E', '#FFFF00')">Mi (Amarillo)</button>
+        <button onclick="addNote('F', '#ADFF2F')">Fa (Verde claro)</button>
+        <button onclick="addNote('F#', '#32CD32')">Fa# (Verde lima)</button>
+        <button onclick="addNote('G', '#0000FF')">Sol (Azul)</button>
+        <button onclick="addNote('G#', '#4B0082')">Sol# (Índigo)</button>
+        <button onclick="addNote('A', '#800080')">La (Violeta)</button>
+        <button onclick="addNote('A#', '#DB7093')">La# (Rosado oscuro)</button>
+        <button onclick="addNote('B', '#FFC0CB')">Si (Rosa)</button>
+    </div>
+    <div>
+        <button onclick="toggleLowNote()">Alternar nota grave</button>
+        <button onclick="clearScore()">Limpiar partitura</button>
+        <button onclick="playComposition()">Reproducir composición</button>
+    </div>
+
+    <script>
+        const score = document.getElementById('score');
+        let isLowNote = false;
+        
+        function addNote(note, color) {
+            const noteElement = document.createElement('div');
+            noteElement.className = 'note';
+            noteElement.style.backgroundColor = color;
+            noteElement.dataset.note = note;
+            if (isLowNote) {
+                noteElement.classList.add('low');
+            }
+            noteElement.onclick = () => noteElement.remove();
+            score.appendChild(noteElement);
+        }
+
+        function toggleLowNote() {
+            isLowNote = !isLowNote;
+            document.getElementById('controls').style.opacity = isLowNote ? 0.5 : 1;
+        }
+
+        function clearScore() {
+            score.innerHTML = '';
+        }
+
+        function playComposition() {
+            const notes = score.children;
+            let delay = 0;
+            for (let note of notes) {
+                setTimeout(() => {
+                    playNote(note.dataset.note, note.classList.contains('low'));
+                    note.style.opacity = 0.5;
+                    setTimeout(() => {
+                        note.style.opacity = 1;
+                    }, 300);
+                }, delay);
+                delay += 500;
+            }
+        }
+
+        function playNote(note, isLow) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            const freq = noteToFreq(note, isLow);
+            osc.frequency.value = freq;
+
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        }
+
+        function noteToFreq(note, isLow) {
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const octave = isLow ? 3 : 4;
+            const number = notes.indexOf(note);
+            
+            if (number < 0) {
+                return 0;
+            }
+
+            return 440 * Math.pow(2, (number - 9) / 12 + (octave - 4));
+        }
+    </script>
+</body>
+</html>
